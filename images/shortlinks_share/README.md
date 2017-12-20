@@ -31,10 +31,10 @@
 ![加密算法原理图](https://github.com/wangsir0624/resources/blob/master/images/shortlinks_share/jiami.png)
 
 #### 压力测试
-测试人员：星辰&隆杰
-测试服务器：101.37.254.197
-架构方式：golang+redis，nginx反代
-测试数据：20W
+- 测试人员：星辰&隆杰
+- 测试服务器：101.37.254.197
+- 架构方式：golang+redis，nginx反代
+- 测试数据：20W
 
 |    并发量     |  吞吐率   |   平均响应时间（ms）   |
 | :---------: | :---: | :----: |
@@ -44,5 +44,7 @@
 | 3000 | 270.63 | 3.695 |
 
 ## 接入指南
+- 接口权限验证：接口采用appkey+appsecret的方式进行权限验证，调用接口的时候，需要传递一个timestamp时间戳参数和一个signture签名参数，签名算法md5(appkey+appsecret+timestamp)，这样可以防止重放攻击，保护接口安全。因此，在接入的时候，需要先申请一对app key和app secret
+- SDK：[点击跳转](http://git.linghit.com:666/datacenter/datacenter.linghit.com.backend/tree/master/src/Services/ShortLinks)
 
 ## 问题与解决
