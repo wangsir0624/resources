@@ -27,6 +27,10 @@
 - mysql中的获取
 - redis中的获取
 
+##### 延伸
+[锁在其他场合的一些应用](http://git.linghit.com:666/linghit/draw.linghit.com/blob/master/src/Controller/LingqianController.php)
+[wangsir0624/mutex](https://github.com/wangsir0624/mutex)
+
 #### 加密算法
 ![加密算法原理图](https://github.com/wangsir0624/resources/blob/master/images/shortlinks_share/jiami.png)
 
@@ -48,6 +52,6 @@
 - SDK：[点击跳转](http://git.linghit.com:666/datacenter/datacenter.linghit.com.backend/tree/master/src/Services/ShortLinks)
 
 ## 问题与解决
-问题：之前redis被清理过一次，导致临时短链全都失效，无法访问
-解决：1、单独开一个线程，定时检测redis的运行情况，如果redis再次出现数据丢失的情况，给相关负责人发送邮件提醒。
+- 问题：之前redis被清理过一次，导致临时短链全都失效，无法访问
+- 解决：1、单独开一个线程，定时检测redis的运行情况，如果redis再次出现数据丢失的情况，给相关负责人发送邮件提醒。
 2、添加快速恢复数据的功能。
