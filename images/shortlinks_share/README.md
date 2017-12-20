@@ -28,8 +28,8 @@
 - redis中的获取
 
 ##### 延伸
-[锁在其他场合的一些应用](http://git.linghit.com:666/linghit/draw.linghit.com/blob/master/src/Controller/LingqianController.php)
-[wangsir0624/mutex](https://github.com/wangsir0624/mutex)
+- [锁在其他场合的一些应用](http://git.linghit.com:666/linghit/draw.linghit.com/blob/master/src/Controller/LingqianController.php)
+- [wangsir0624/mutex](https://github.com/wangsir0624/mutex)
 
 #### 加密算法
 ![加密算法原理图](https://github.com/wangsir0624/resources/blob/master/images/shortlinks_share/jiami.png)
