@@ -28,7 +28,7 @@
 - redis中的获取
 
 #### 加密算法
-
+![加密算法原理图](https://github.com/wangsir0624/resources/blob/master/images/shortlinks_share/jiami.png)
 
 #### 性能
 
