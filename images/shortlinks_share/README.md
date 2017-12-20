@@ -10,8 +10,14 @@
 - 区分临时短链和永久短链，采用不同的存储层存储，临时短链采用redis存储，永久短链采用mysql存储。防止数据量暴涨，降低吞吐率。
 - 错误告警和快速恢复
 
-### 原理与难点
-![短链接生成服务原理图](https://github.com/wangsir0624/resources/blob/master/images/shortlinks_share/yuanli.png)
+### 接口列表
+```
+接口1：POST /api/shortlinks      生成短链接
+接口2：GET /{shortlink}          跳转到原始链接
+```
+
+### 原理与关键点
+![短链接生成服务原理图](https://github.com/wangsir0624/resources/blob/master/images/shortlinks_share/yuanli.jpg)
 
 思考两个问题：
 1、是否可以将原始链接作为明文进行加密
@@ -22,6 +28,9 @@
 - redis中的获取
 
 #### 加密算法
+
+
+#### 性能
 
 
 ## 接入指南
