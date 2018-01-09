@@ -25,9 +25,8 @@ sudo wget https://bintray.com/kong/kong-community-edition-deb/download_file?file
 #安装
 sudo apt-get update
 sudo apt-get install openssl libpcre3 procps perl
-sudo dpkg -i kong-community-edition-0.11.2.*.deb
+sudo dpkg -i *kong-community-edition-0.11.2.*.deb
 ```
-安装完成后，输入
 
 ### PostgreSQL安装
 Kong支持两种数据库来充当存储层，分别为：[Cassandra](http://cassandra.apache.org/)和[PostgreSQL](https://www.postgresql.org/)，本文以PostgreSQL为例。
@@ -51,6 +50,25 @@ psql
 ```psql
 CREATE USER kong; CREATE DATABASE kong OWNER kong;
 ```
+
+>将Kong认证方式修改为md5
+
+打开/etc/postgresql/9.6/main/pg_hba.conf，修改两行配置
+```vim
+local all postgres peer
+local all all peer
+```
+修改为
+```vim
+local all postgres md5
+local all all md5
+```
+
+重启postgresql
+```bash
+sudo service postgresql restart
+```
+
 
 >修改kong配置文件
 >将kong.conf修改为如下：
