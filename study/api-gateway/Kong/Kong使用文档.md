@@ -110,7 +110,7 @@ curl -i http://localhost:8001/
 - [增加或修改API](https://getkong.org/docs/0.11.x/admin-api/#update-or-create-api)
 - [删除API](https://getkong.org/docs/0.11.x/admin-api/#delete-api)
 
-由于篇幅关系，这儿就不对这些API进行全部介绍，大家可以参看官网的文档
+>由于篇幅关系，这儿就不对这些API进行全部介绍，大家可以参看官网的文档
 
 ### 增加接口
 以观音灵签项目获取灵签解签API为例，接口地址为：http://112.124.40.205:9706/v1/lingqians/{lingqian_id}
@@ -182,25 +182,95 @@ Via: kong/0.11.2
 
 ### 接口转发规则
 增加API的接口包含三个参数：hosts、uris、methods，这三个参数是用来控制转发规则的，在调用增加API接口时，至少要传递其中一个参数。这三个参数都是可以配置多个值的，不同值之间以逗号分割。
+考虑如下的API配置：
+```json
+{
+    "name": "my-api",
+    "upstream_url": "http://my-api.com",
+    "hosts": ["example.com", "service.com"],
+    "uris": ["/foo", "/bar"],
+    "methods": ["GET"]
+}
+```
 
-## Customer管理
-消费者，顾名思义，就是API的使用者，这个模块主要是用来做一些API授权用的，后面讲到的权限相关插件的权限分配主题都是这儿讲到的Customer。消费者管理类似于API管理，也是通过调用Kong的admin api进行管理。
+下面列出一些符合规则的请求
+```http
+GET /foo HTTP/1.1
+Host: example.com
+```
+
+```http
+GET /bar HTTP/1.1
+Host: service.com
+```
+
+```http
+GET /foo/hello/world HTTP/1.1
+Host: example.com
+```
+>注意：第三个API也是符合规则的，因为uri进行匹配的时候，是按照前缀规则进行匹配
+
+下面再列出一些不符合规则的请求
+```http
+GET / HTTP/1.1
+Host: example.com
+```
+
+```http
+POST /foo HTTP/1.1
+Host: example.com
+```
+
+```http
+GET /foo HTTP/1.1
+Host: foo.com
+```
+
+>由于篇幅限制，不能覆盖到全部知识点，想了解全部的同学[戳这里](https://getkong.org/docs/0.11.x/proxy/)
+
+## Consumer管理
+消费者，顾名思义，就是API的使用者，这个模块主要是用来做一些API授权用的，后面讲到的权限相关插件的权限分配主体都是这儿讲到的Consumer。消费者管理类似于API管理，也是通过调用Kong的admin api进行管理。
 
 ### API列表
-- [获取Customer列表](https://getkong.org/docs/0.11.x/admin-api/#list-consumers)
-- [创建Customer](https://getkong.org/docs/0.11.x/admin-api/#create-consumer)
-- [查看Customer](https://getkong.org/docs/0.11.x/admin-api/#retrieve-consumer)
-- [更新Customer](https://getkong.org/docs/0.11.x/admin-api/#update-consumer)
-- [增加或修改Customer](https://getkong.org/docs/0.11.x/admin-api/#update-or-create-consumer)
-- [删除Customer](https://getkong.org/docs/0.11.x/admin-api/#delete-consumer)
+- [获取Consumer列表](https://getkong.org/docs/0.11.x/admin-api/#list-consumers)
+- [创建Consumer](https://getkong.org/docs/0.11.x/admin-api/#create-consumer)
+- [查看Consumer](https://getkong.org/docs/0.11.x/admin-api/#retrieve-consumer)
+- [更新Consumer](https://getkong.org/docs/0.11.x/admin-api/#update-consumer)
+- [增加或修改Consumer](https://getkong.org/docs/0.11.x/admin-api/#update-or-create-consumer)
+- [删除Consumer](https://getkong.org/docs/0.11.x/admin-api/#delete-consumer)
 
-想了解更多的同学，可以参看[官方文档](https://getkong.org/docs/0.11.x/getting-started/adding-consumers/)
+>想了解更多的同学，可以参看[官方文档](https://getkong.org/docs/0.11.x/getting-started/adding-consumers/)
 
 ## 进阶
 
-### Kong常用配置
-
 ### 后端接口负载均衡
+
+当后端接口访问量大的时候，一台服务器可能服务不过来，这时候我们就要对后端接口做一下负载均衡。目前Kong常用的负载均衡方法主要有DNS轮询、加权轮询等
+
+#### DNS轮询
+DNS轮询是通过给一个域名添加多条A解析记录来实现负载均衡的。配置的时候非常简单，例如我们有三台后端服务器，IP分别为1.1.1.1、2.2.2.2、3.3.3.3，域名为example.com。在添加API的时候，stream_url参数设置为example.com，然后给域名example.com添加3条A解析记录，分别指向1.1.1.1、2.2.2.2以及3.3.3.3，这样配置就算完成了。虽然配置简单，但是弊端也非常明显，DNS轮询无法给后端服务器分配权重，而且无法对后端服务器进行健康检查，如果有一台服务器宕机了，DNS依然会解析到这台服务器。<br />
+添加A记录的时候，有一个很重要的配置参数TTL，这个参数是用来控制域名解析结果刷新频率的，TTL越大，DNS缓存时间越长，更新越慢，TTL越小，更新越快，如果TTL为0，表示每次请求都会刷新DNS解析结果，但是会延长请求响应时间，在实际配置中，必须综合考虑多方面因素，设置合适的值。
+
+#### 加权轮询
+类似与Nginx的负载均衡，Kong也是通过配置upstream和target来实现负载均衡的。下面示范upstream和target的配置过程：
+```bash
+# create an upstream
+curl -i -X POST http://localhost:8001/upstreams --data "name=address.v1.service"
+
+# add two targets to the upstream
+curl -i -X POST http://localhost:8001/upstreams/address.v1.service/targets --data "target=192.168.34.15:80" --data "weight=100"
+curl -i -X POST http://localhost:8001/upstreams/address.v1.service/targets --data "target=192.168.34.16:80" --data "weight=50"
+```
+
+执行上面的语句，我们就创建了一个名为address.v1.service的upstream，并且给这个upstream添加了两个target节点，权重分别为100和50。当配置API的时候，只要将stream_url设置为http://address.v1.service即可。当接收到请求时，2/3的请求将会转发到192.168.34.15:80，1/3的请求转发到192.168.34.16:80
+
+#### Nginx负载均衡
+就是利用Nginx反向代理做负载均衡，然后将API的upstream_url配置为代理服务器的地址。这个方法具有下面几个优势：
+
+- nginx的upstream模块提供了多种调度算法，例如加权轮询、ip_hash、url_hash、fair等，使用起来更加灵活
+- nginx的upstream提供了健康检查机制，如果后端服务器工作不正常，nginx会将这个节点标记为down，大大提高了可用性
+
+>综上所属，个人觉得Nginx负载均衡是最为理想的一种方案
 
 ### Kong集群
 
