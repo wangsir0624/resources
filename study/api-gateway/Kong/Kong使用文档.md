@@ -147,7 +147,7 @@ Server: kong/0.11.2
 
 >测试
 ```bash
- curl -i -X GET --url 'http://localhost:8000/v1/lingqians/guanyin1?mmc_code_tag=1.0.0&mmc_channel=QQ&mmc_devicesn=868724413019320&mmc_appid=5002&mmc_package=oms.mmc.fortunetelling.measuringtools.naming&mmc_operate_tag=5.8.2&mmc_lang=zh&mmc_platform=Android&user_id=1' --header 'Host: lingqian'
+curl -i -X GET --url 'http://localhost:8000/v1/lingqians/guanyin1?mmc_code_tag=1.0.0&mmc_channel=QQ&mmc_devicesn=868724413019320&mmc_appid=5002&mmc_package=oms.mmc.fortunetelling.measuringtools.naming&mmc_operate_tag=5.8.2&mmc_lang=zh&mmc_platform=Android&user_id=1' --header 'Host: lingqian'
 ```
 接口返回如下：
 ```
@@ -248,8 +248,8 @@ Host: foo.com
 当后端接口访问量大的时候，一台服务器可能服务不过来，这时候我们就要对后端接口做一下负载均衡。目前Kong常用的负载均衡方法主要有DNS轮询、加权轮询等
 
 #### DNS轮询
-DNS轮询是通过给一个域名添加多条A解析记录来实现负载均衡的。配置的时候非常简单，例如我们有三台后端服务器，IP分别为1.1.1.1、2.2.2.2、3.3.3.3，域名为example.com。在添加API的时候，stream_url参数设置为example.com，然后给域名example.com添加3条A解析记录，分别指向1.1.1.1、2.2.2.2以及3.3.3.3，这样配置就算完成了。虽然配置简单，但是弊端也非常明显，DNS轮询无法给后端服务器分配权重，而且无法对后端服务器进行健康检查，如果有一台服务器宕机了，DNS依然会解析到这台服务器。<br />
-添加A记录的时候，有一个很重要的配置参数TTL，这个参数是用来控制域名解析结果刷新频率的，TTL越大，DNS缓存时间越长，更新越慢，TTL越小，更新越快，如果TTL为0，表示每次请求都会刷新DNS解析结果，但是会延长请求响应时间，在实际配置中，必须综合考虑多方面因素，设置合适的值。
+DNS轮询是通过给一个域名添加多条A解析记录来实现负载均衡的。配置的时候非常简单，例如我们有三台后端服务器，IP分别为1.1.1.1、2.2.2.2、3.3.3.3，域名为example.com。在添加API的时候，upstream_url参数设置为example.com，然后给域名example.com添加3条A解析记录，分别指向1.1.1.1、2.2.2.2以及3.3.3.3，这样配置就算完成了。虽然配置简单，但是弊端也非常明显，DNS轮询无法给后端服务器分配权重，而且无法对后端服务器进行健康检查，如果有一台服务器宕机了，DNS依然有可能解析到这台服务器。<br />
+添加A记录的时候，有一个很重要的配置参数TTL，这个参数是用来控制域名解析结果刷新频率的，TTL越大，DNS缓存时间越长，更新越慢，TTL越小，更新越快，如果TTL为0，表示每次请求都会刷新DNS解析结果，但是会延长请求响应时间，在实际配置中，应该综合考虑多方面因素，设置合适的值。
 
 #### 加权轮询
 类似于Nginx的负载均衡，Kong也是通过配置upstream和target来实现负载均衡的。下面示范upstream和target的配置过程：
@@ -281,10 +281,10 @@ Kong作为所有API的公共入口，访问量是所有API访问量的总和，�
 
 #### 集群缓存更新问题
 
-为了性能，Kong会将数据库中的各种配置，例如API、Consumer、Upstream等，缓存到内存中。当集群中有两个节点A和B，如果我们请求A的admin api来修改Kong配置，节点A会立即更新缓存内容，但是节点B对这个过程是毫无察觉的，因此节点B中缓存的内容就是已经过期了的。Kong采用一个很简单的方法来解决这个问题：定期向数据库pull新数据，我们可以通过一些配置项来控制更新频率，主要的配置项有一下三个：
+为了性能，Kong会将数据库中的各种配置，例如API、Consumer、Upstream等，缓存到内存中。当集群中有两个节点A和B，如果我们请求A的admin api来修改Kong配置，节点A会立即更新缓存内容，但是节点B对这个过程是毫无察觉的，因此节点B中缓存的内容就是已经过期了的。Kong采用一个很简单的方法来解决这个问题：定期向数据库pull新数据，我们可以通过一些配置项来控制更新频率，主要的配置项有以下三个：
 
 - db_update_frequecy（默认5s），此配置项控制Kong节点从数据库中pull新数据的时间间隔
-- db_update_propagation(默认0s)，此配置项主要是针对Cassandra数据库的，因为Cassandra数据库是分布式的，每个节点都是数据的一份完整拷贝（类似与Mysql主从复制），当在一个Cassandra节点中修改数据后，这个节点会将修改同步到其他节点中，这个过程会消耗一定的时间，这个配置项代表的就是这个时间消耗。如果此配置项不为0，那么Kong更新缓存数据的时间间隔即为db_update_frequecy+db_update_propagation
+- db_update_propagation(默认0s)，此配置项主要是针对Cassandra数据库的，因为Cassandra数据库是分布式的，每个节点都是数据的一份完整拷贝（类似于Mysql主从复制），当在一个Cassandra节点中修改数据后，这个节点会将修改同步到其他节点中，这个过程会消耗一定的时间，这个配置项代表的就是这个时间消耗。如果此配置项不为0，那么Kong更新缓存数据的时间间隔即为db_update_frequecy+db_update_propagation
 - db_cache_ttl(默认3600s)，缓存的最大生命周期
 
 ### 插件
@@ -323,7 +323,7 @@ curl -i -X POST --url http://localhost:8001/plugins/ --data 'name=key-auth'
 更多接口详情，请[点击这里](https://getkong.org/docs/0.11.x/admin-api/#add-plugin)
 
 #### 常用插件
-下面列出一些个人觉得使用场合比较多的一些插件，感兴趣的同学可以直接点击链接跳转到相关文档。
+下面列出个人觉得使用场合比较多的一些插件，感兴趣的同学可以直接点击链接跳转到相关文档。
 
 > 身份认证
 
@@ -335,7 +335,7 @@ curl -i -X POST --url http://localhost:8001/plugins/ --data 'name=key-auth'
 > 安全相关
 
 - [ACL](https://getkong.org/plugins/acl/?_ga=2.45751204.1019702809.1515402740-73173773.1515052493)
-- [CORS][https://getkong.org/plugins/cors/?_ga=2.45751204.1019702809.1515402740-73173773.1515052493]
+- [CORS](https://getkong.org/plugins/cors/?_ga=2.45751204.1019702809.1515402740-73173773.1515052493)
 - [Dynamic SSL](https://getkong.org/plugins/dynamic-ssl/?_ga=2.8072242.1019702809.1515402740-73173773.1515052493)
 - [IP Restrictioon](https://getkong.org/plugins/ip-restriction/?_ga=2.8072242.1019702809.1515402740-73173773.1515052493)
 - [Bot Detection](https://getkong.org/plugins/bot-detection/?_ga=2.7942962.1019702809.1515402740-73173773.1515052493)
