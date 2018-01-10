@@ -262,10 +262,10 @@ curl -i -X POST http://localhost:8001/upstreams/address.v1.service/targets --dat
 curl -i -X POST http://localhost:8001/upstreams/address.v1.service/targets --data "target=192.168.34.16:80" --data "weight=50"
 ```
 
-执行上面的语句，我们就创建了一个名为address.v1.service的upstream，并且给这个upstream添加了两个target节点，权重分别为100和50。当配置API的时候，只要将stream_url设置为http://address.v1.service即可。当接收到请求时，2/3的请求将会转发到192.168.34.15:80，1/3的请求转发到192.168.34.16:80
+执行上面的语句，我们就创建了一个名为address.v1.service的upstream，并且给这个upstream添加了两个target节点，权重分别为100和50。当配置API的时候，只要将upstream_url设置为http://address.v1.service即可。当接收到请求时，2/3的请求将会转发到192.168.34.15:80，1/3的请求转发到192.168.34.16:80
 
 #### Nginx负载均衡
-就是利用Nginx反向代理做负载均衡，然后将API的upstream_url配置为代理服务器的地址。这个方法具有下面几个优势：
+就是利用Nginx反向代理做负载均衡，然后将API的upstream_url配置为代理服务器的地址。这个方法具有如下几个优势：
 
 - nginx的upstream模块提供了多种调度算法，例如加权轮询、ip_hash、url_hash、fair等，使用起来更加灵活
 - nginx的upstream提供了健康检查机制，如果后端服务器工作不正常，nginx会将这个节点标记为down，大大提高了可用性
@@ -273,6 +273,19 @@ curl -i -X POST http://localhost:8001/upstreams/address.v1.service/targets --dat
 >综上所属，个人觉得Nginx负载均衡是最为理想的一种方案
 
 ### Kong集群
+
+Kong作为所有API的公共入口，访问量是所有API访问量的总和，因此，Kong网关必须具有足够大的吞吐率，很多时候都需要部署多台Kong，构成一个网关集群，才能满足要求。Kong在集群方面没有做太多的工作，只要将多个Kong节点，使用相同的数据库配置，他们就能够构成一个集群，但是Kong集群本身并没有实现负载均衡算法，需要在集群前面配置一个Nginx代理服务器来进行请求调度。不过好处是，配置格外简单，只需要如下两部，就能构造一个Kong集群：
+
+- 在多台机器上安装并启动Kong，这些Kong节点必须使用相同的数据库配置
+- 配置Nginx反向代理服务器，将请求分发到这些Kong节点
+
+#### 集群缓存更新问题
+
+为了性能，Kong会将数据库中的各种配置，例如API、Consumer、Upstream等，缓存到内存中。当集群中有两个节点A和B，如果我们请求A的admin api来修改Kong配置，节点A会立即更新缓存内容，但是节点B对这个过程是毫无察觉的，因此节点B中缓存的内容就是已经过期了的。Kong采用一个很简单的方法来解决这个问题：定期想数据库pull新数据，我们可以通过一些配置项来控制更新频率，主要的配置项有一下三个：
+
+- db_update_frequecy（默认5s），此配置项Kong节点从数据库中pull新数据的时间间隔
+- db_update_propagation(默认0s)，此配置项只要是针对Cassandra数据库的，因为Cassandra数据库是分布式的，每个节点都是数据的一份完整拷贝（类似与Mysql主从复制），当在一个Cassandra节点中修改数据后，这个节点会将修改同步到其他节点中，这个过程会消耗一定的时间，这个配置项代表的就是这个时间消耗。如果此配置想不为0，那么Kong更新数据的时间间隔即为db_update_frequecy+db_update_propagation
+- db_cache_ttl(默认3600s)，缓存的最大生命周期
 
 ### 插件
 
